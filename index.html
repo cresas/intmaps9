@@ -22,23 +22,21 @@
     }
 
     .tooltip-style {
-   background: rgba(255, 255, 255, 1);
-  padding: 2px;
-  opacity: 0.7;
-  border-radius: 3px;
-  font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
-  font-size: 0.75rem;
-  line-height: 1.5;
-
-  white-space: nowrap;
-  min-width: 120px; /* Minimum genişlik ayarla */
-   min-width: max-content; /* İçeriğe göre genişlik ayarla */
-  max-width: 100%; /* Taşmayı önle */
-  text-align: center;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  
+      background: rgba(255, 255, 255, 1);
+      padding: 2px;
+      opacity: 0.7;
+      border-radius: 3px;
+      font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+      font-size: 0.75rem;
+      line-height: 1.5;
+      white-space: nowrap;
+      min-width: 120px;
+      min-width: max-content;
+      max-width: 100%;
+      text-align: center;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
     }
 
     #bottom-bar {
@@ -128,17 +126,27 @@
       .then(data => {
         L.geoJSON(data, {
           style: getCountryStyle,
+          filter: function (feature) {
+            // Ülke ismi varsa haritada göster
+            return feature.properties.ÜLKE && feature.properties.ÜLKE.trim() !== "";
+          },
           onEachFeature: function(feature, layer) {
             var countryName = feature.properties.ÜLKE;
+
+            // Eğer ülke ismi yoksa harita üzerinde gösterme
+            if (!countryName || countryName.trim() === "") {
+              return; // Bu durumda hiç bir şey eklenmeyecek
+            }
+
             var center = turf.centroid(feature).geometry.coordinates;
 
             if (countryName === "İNGİLTERE") {
               center = [-0.978, 52.5074]; // Londra'nın koordinatları
             }
             
-             if (countryName === "OSMANLI İMPARATORLUĞU") { 
-    center = [32.0, 39.0]; //  merkez
-}
+            if (countryName === "OSMANLI İMPARATORLUĞU") { 
+              center = [32.0, 39.0]; // Osmanlı İmparatorluğu merkezi
+            }
 
             L.marker([center[1], center[0]], {
               icon: L.divIcon({
