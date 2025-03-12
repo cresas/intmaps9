@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>İnteraktif Harita 9</title>
+  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/turf/turf.min.js"></script>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    .tooltip-style {
+   background: rgba(255, 255, 255, 1);
+  padding: 2px;
+  opacity: 0.7;
+  border-radius: 3px;
+  font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+  font-size: 0.75rem;
+  line-height: 1.5;
+
+  white-space: nowrap;
+  min-width: 120px; /* Minimum genişlik ayarla */
+   min-width: max-content; /* İçeriğe göre genişlik ayarla */
+  max-width: 100%; /* Taşmayı önle */
+  text-align: center;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  
+    }
+
+    #bottom-bar {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 5%;
+      background-color: #262626;
+      z-index: 1000;
+    }
+
+    @media (max-width: 600px) {
+      .tooltip-style {
+        font-size: 6pt !important;
+      }
+      #bottom-bar {
+        width: 100%;
+        height: 1.2rem;
+      }
+    }
+
+    @media (min-width: 601px) {
+      #bottom-bar {
+        width: 100%;
+        height: 1.2rem;
+        background-color: #262626;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="bottom-bar"></div>
+  
+  <script>
+    var zoomLevel = (window.innerWidth <= 600) ? 5 : 4;
+    var map = L.map('map', {
+      center: [42.5, 25.0],
+      zoom: zoomLevel,
+      minZoom: 3,
+      maxBounds: [[-85, -180], [85, 180]],
+      maxBoundsViscosity: 1.0,
+      worldCopyJump: true
+    });
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+      attribution: '© OpenStreetMap, © CartoDB',
+      maxZoom: 19
+    }).addTo(map);
+
+    var defaultStyle = {
+      color: "#b47c80",
+      weight: 1,
+      fillColor: "#282828",
+      fillOpacity: 0.6
+    };
+
+    var selectedStyle = {
+      color: "#dcae0f",
+      weight: 1,
+      fillColor: "#282828",
+      fillOpacity: 0.6
+    };
+
+    function getCountryStyle(feature) {
+      if (feature.properties.TARAF === "İTİLAF") {
+        return { color: "#b47c80", weight: 1, fillColor: "#ff0000", fillOpacity: 0.6 };
+      } else if (feature.properties.TARAF === "İTTİFAK") {
+        return { color: "#b47c80", weight: 1, fillColor: "#ff7f00", fillOpacity: 0.6 };
+      }
+      return defaultStyle;
+    }
+
+    function getSelectedStyle(feature) {
+      if (feature.properties.TARAF === "İTİLAF") {
+        return { color: "#dcae0f", weight: 1, fillColor: "#ff6666", fillOpacity: 0.8 };
+      } else if (feature.properties.TARAF === "İTTİFAK") {
+        return { color: "#dcae0f", weight: 1, fillColor: "#ffb366", fillOpacity: 0.8 };
+      }
+      return selectedStyle;
+    }
+
+    var selectedLayer = null;
+
+    fetch('data.geojson')
+      .then(response => response.json())
+      .then(data => {
+        L.geoJSON(data, {
+          style: getCountryStyle,
+          onEachFeature: function(feature, layer) {
+            var countryName = feature.properties.ÜLKE;
+            var center = turf.centroid(feature).geometry.coordinates;
+
+            if (countryName === "İNGİLTERE") {
+              center = [-0.978, 52.5074]; // Londra'nın koordinatları
+            }
+            
+             if (countryName === "OSMANLI İMPARATORLUĞU") { 
+    center = [32.0, 39.0]; //  merkez
+}
+
+            L.marker([center[1], center[0]], {
+              icon: L.divIcon({
+                className: 'tooltip-style',
+                html: `<div>${countryName}</div>`,
+                iconSize: [60, 25]
+              })
+            }).addTo(map);
+
+            layer.bindPopup(`
+              <b>Ülke:</b> ${countryName}<br>
+              <b>TARAF:</b> <span style="color: black;">${feature.properties.TARAF}</span><br>
+            `);
+
+            layer.on('click', function() {
+              if (selectedLayer) {
+                selectedLayer.setStyle(getCountryStyle(selectedLayer.feature));
+              }
+              layer.setStyle(getSelectedStyle(layer.feature));
+              selectedLayer = layer;
+            });
+          }
+        }).addTo(map);
+      })
+      .catch(error => console.error("GeoJSON yüklenirken hata oluştu:", error));
+  </script>
+</body>
+</html>
